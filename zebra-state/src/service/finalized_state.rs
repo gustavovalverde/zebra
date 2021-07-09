@@ -7,11 +7,12 @@ mod tests;
 
 use std::{collections::HashMap, convert::TryInto, path::Path, sync::Arc};
 
-use zebra_chain::transparent;
 use zebra_chain::{
     block::{self, Block},
     parameters::{Network, GENESIS_PREVIOUS_BLOCK_HASH},
+    sprout,
     transaction::{self, Transaction},
+    transparent,
 };
 
 use crate::{BoxError, Config, FinalizedBlock, HashOrHeight, Utxo};
@@ -356,6 +357,12 @@ impl FinalizedState {
     pub fn utxo(&self, outpoint: &transparent::OutPoint) -> Option<Utxo> {
         let utxo_by_outpoint = self.db.cf_handle("utxo_by_outpoint").unwrap();
         self.db.zs_get(utxo_by_outpoint, outpoint)
+    }
+
+    /// Returns `true` if the finalized state contains `sprout_nullifier`.
+    pub fn contains_sprout_nullifier(&self, sprout_nullifier: &sprout::Nullifier) -> bool {
+        let sprout_nullifiers = self.db.cf_handle("sprout_nullifiers").unwrap();
+        self.db.zs_contains(sprout_nullifiers, &sprout_nullifier)
     }
 
     /// Returns the finalized hash for a given `block::Height` if it is present.
