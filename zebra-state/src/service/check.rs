@@ -3,6 +3,7 @@
 use std::borrow::Borrow;
 
 use chrono::Duration;
+
 use zebra_chain::{
     block::{self, Block},
     parameters::POW_AVERAGING_WINDOW,
@@ -17,6 +18,7 @@ use super::check;
 use difficulty::{AdjustedDifficulty, POW_MEDIAN_BLOCK_SPAN};
 
 pub(crate) mod difficulty;
+pub(crate) mod nullifier;
 
 /// Check that `block` is contextually valid for `network`, based on the
 /// `finalized_tip_height` and `relevant_chain`.
