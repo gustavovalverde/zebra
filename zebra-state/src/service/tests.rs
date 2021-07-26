@@ -1,16 +1,21 @@
-use std::{env, sync::Arc};
+use std::{convert::TryFrom, env, sync::Arc};
 
 use futures::stream::FuturesUnordered;
 use tower::{util::BoxService, Service, ServiceExt};
+
 use zebra_chain::{
-    block::Block,
+    block::{self, Block},
     parameters::{Network, NetworkUpgrade},
     serialization::ZcashDeserializeInto,
-    transaction, transparent,
+    transaction,
+    transparent::{self, CoinbaseSpendRestriction::OnlyShieldedOutputs},
 };
 use zebra_test::{prelude::*, transcript::Transcript};
 
-use crate::{init, service::arbitrary, BoxError, Config, Request, Response};
+use crate::{
+    constants::MIN_TRANSPARENT_COINBASE_MATURITY, init, service::arbitrary, BoxError, Config,
+    Request, Response,
+};
 
 const LAST_BLOCK_HEIGHT: u32 = 10;
 
@@ -88,13 +93,25 @@ async fn test_populated_state_responds_correctly(
                         hash: transaction_hash,
                         index: index as _,
                     };
+
                     let utxo = transparent::Utxo {
                         output,
                         height,
                         from_coinbase,
                     };
 
-                    transcript.push((Request::AwaitUtxo(outpoint), Ok(Response::Utxo(utxo))));
+                    // Use the minimum possible spend height
+                    let spend_height = block::Height(
+                        u32::try_from(ind).unwrap() + MIN_TRANSPARENT_COINBASE_MATURITY,
+                    );
+
+                    transcript.push((
+                        Request::AwaitSpendableUtxo {
+                            outpoint,
+                            spend_restriction: OnlyShieldedOutputs { spend_height },
+                        },
+                        Ok(Response::SpendableUtxo(utxo)),
+                    ));
                 }
             }
         }

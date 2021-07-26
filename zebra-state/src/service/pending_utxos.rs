@@ -3,9 +3,9 @@ use std::future::Future;
 
 use tokio::sync::broadcast;
 
-use zebra_chain::transparent;
+use zebra_chain::transparent::{self, CoinbaseSpendRestriction};
 
-use crate::{BoxError, Response};
+use crate::{service::check, BoxError, Response};
 
 #[derive(Debug, Default)]
 pub struct PendingUtxos(HashMap<transparent::OutPoint, broadcast::Sender<transparent::Utxo>>);
@@ -16,6 +16,7 @@ impl PendingUtxos {
     pub fn queue(
         &mut self,
         outpoint: transparent::OutPoint,
+        spend_restriction: CoinbaseSpendRestriction,
     ) -> impl Future<Output = Result<Response, BoxError>> {
         let mut receiver = self
             .0
@@ -27,10 +28,10 @@ impl PendingUtxos {
             .subscribe();
 
         async move {
-            receiver
-                .recv()
-                .await
-                .map(Response::Utxo)
+            let utxo = receiver.recv().await?;
+
+            check::utxo::validate_transparent_coinbase_spend(outpoint, spend_restriction, utxo)
+                .map(Response::SpendableUtxo)
                 .map_err(BoxError::from)
         }
     }
@@ -38,6 +39,8 @@ impl PendingUtxos {
     /// Notify all requests waiting for the [`Utxo`] pointed to by the given
     /// [`transparent::OutPoint`] that the [`Utxo`] has arrived.
     pub fn respond(&mut self, outpoint: &transparent::OutPoint, utxo: transparent::Utxo) {
+        // TODO: check spend rules here
+
         if let Some(sender) = self.0.remove(outpoint) {
             // Adding the outpoint as a field lets us crossreference
             // with the trace of the verification that made the request.
