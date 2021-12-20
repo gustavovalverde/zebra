@@ -13,12 +13,14 @@ use super::{SerializationError, ZcashDeserialize, ZcashSerialize};
 
 /// A date and time, represented by a 32-bit number of seconds since the UNIX epoch.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[must_use = "unused DateTime32 that must be used"]
 pub struct DateTime32 {
     timestamp: u32,
 }
 
 /// An unsigned time duration, represented by a 32-bit number of seconds.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[must_use = "unused Duration32 that must be used"]
 pub struct Duration32 {
     seconds: u32,
 }

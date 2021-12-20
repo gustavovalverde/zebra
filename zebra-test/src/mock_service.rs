@@ -105,6 +105,8 @@ type ProxyItem<Request, Response, Error> =
 /// [`broadcast`] channel that the other instances listen to.
 ///
 /// See the [module-level documentation][`super::mock_service`] for an example.
+#[derive(Debug)]
+#[must_use = "unused mock service that must be used"]
 pub struct MockService<Request, Response, Assertion, Error = BoxError> {
     receiver: broadcast::Receiver<ProxyItem<Request, Response, Error>>,
     sender: broadcast::Sender<ProxyItem<Request, Response, Error>>,
@@ -116,7 +118,8 @@ pub struct MockService<Request, Response, Assertion, Error = BoxError> {
 ///
 /// Allows changing specific parameters used by the [`MockService`], if necessary. The default
 /// parameters should be reasonable for most cases.
-#[derive(Default)]
+#[derive(Debug, Default)]
+#[must_use = "unused mock service builder that must be used"]
 pub struct MockServiceBuilder {
     proxy_channel_size: Option<usize>,
     max_request_delay: Option<Duration>,
@@ -130,7 +133,7 @@ pub struct MockServiceBuilder {
 ///
 /// If a response is not sent, the channel is closed and a [`BoxError`] is returned by the service
 /// to the caller that sent the request.
-#[must_use = "Tests may fail if a response is not sent back to the caller"]
+#[must_use = "tests may fail if a response is not sent back to the caller"]
 pub struct ResponseSender<Request, Response, Error> {
     request: Request,
     response_sender: oneshot::Sender<Result<Response, Error>>,
@@ -174,6 +177,7 @@ where
 /// because they are actually set by [`MockServiceBuilder::finish`].
 impl MockService<(), (), ()> {
     /// Create a [`MockServiceBuilder`] to help with the creation of a [`MockService`].
+    #[must_use = "service builder does nothing unless used"]
     pub fn build() -> MockServiceBuilder {
         MockServiceBuilder::default()
     }
@@ -306,7 +310,7 @@ impl<Request, Response, Error> MockService<Request, Response, PanicAssertion, Er
     /// #     let mut service = mock_service.clone();
     /// #
     /// let call = tokio::spawn(mock_service.clone().oneshot("request"));
-    ///  
+    ///
     /// mock_service.expect_request("request").await.respond("response");
     ///
     /// assert!(matches!(call.await, Ok(Ok("response"))));
@@ -668,6 +672,7 @@ impl<Request, Response, Assertion, Error> Clone
 
 impl<Request, Response, Error> ResponseSender<Request, Response, Error> {
     /// Create a [`ResponseSender`] for a given `request`.
+    #[must_use = "newly created ResponseSender that must be used"]
     fn new(request: Request) -> (Self, oneshot::Receiver<Result<Response, Error>>) {
         let (response_sender, response_receiver) = oneshot::channel();
 
@@ -681,6 +686,7 @@ impl<Request, Response, Error> ResponseSender<Request, Response, Error> {
     }
 
     /// Access the `request` that's awaiting a response.
+    #[must_use = "accessing the field has no effect unless the returned value is used"]
     pub fn request(&self) -> &Request {
         &self.request
     }

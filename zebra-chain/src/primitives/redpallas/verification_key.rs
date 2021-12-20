@@ -32,8 +32,6 @@ impl<T: SigType> From<VerificationKeyBytes<T>> for [u8; 32] {
     }
 }
 
-// TODO: impl Hash for VerificationKeyBytes, or import that impl: https://github.com/ZcashFoundation/zebra/issues/2044
-
 /// A valid RedPallas verification key.
 ///
 /// This type holds decompressed state used in signature verification; if the
@@ -52,6 +50,7 @@ impl<T: SigType> From<VerificationKeyBytes<T>> for [u8; 32] {
 #[cfg_attr(feature = "serde", serde(try_from = "VerificationKeyBytes<T>"))]
 #[cfg_attr(feature = "serde", serde(into = "VerificationKeyBytes<T>"))]
 #[cfg_attr(feature = "serde", serde(bound = "T: SigType"))]
+#[must_use = "unused verification key that must be used"]
 pub struct VerificationKey<T: SigType> {
     pub(crate) point: pallas::Point,
     pub(crate) bytes: VerificationKeyBytes<T>,

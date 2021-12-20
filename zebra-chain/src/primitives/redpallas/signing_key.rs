@@ -13,6 +13,7 @@ use super::{Error, SigType, Signature, SpendAuth, VerificationKey};
 #[cfg_attr(feature = "serde", serde(try_from = "SerdeHelper"))]
 #[cfg_attr(feature = "serde", serde(into = "SerdeHelper"))]
 #[cfg_attr(feature = "serde", serde(bound = "T: SigType"))]
+#[must_use = "unused signing key that must be used"]
 pub struct SigningKey<T: SigType> {
     sk: pallas::Scalar,
     pk: VerificationKey<T>,
@@ -88,6 +89,7 @@ impl<T: SigType> SigningKey<T> {
     ///
     /// https://zips.z.cash/protocol/nu5.pdf#concretereddsa
     // Similar to signature::Signer but without boxed errors.
+    #[must_use = "signing has no effect unless the returned value is used"]
     pub fn sign<R: RngCore + CryptoRng>(&self, mut rng: R, msg: &[u8]) -> Signature<T> {
         use super::HStar;
 
