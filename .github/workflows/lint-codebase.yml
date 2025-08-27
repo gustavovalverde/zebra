@@ -56,10 +56,10 @@ jobs:
         type: [release, test]
         include:
           - type: release
-            args: --workspace --all-targets -- -D warnings
+            args: --workspace --all-targets
             features: default-release-binaries
           - type: test
-            args: --workspace --all-targets -- -D warnings
+            args: --workspace --all-targets
             features: default-release-binaries proptest-impl lightwalletd-grpc-tests zebra-checkpoints
 
     steps:
@@ -209,6 +209,9 @@ jobs:
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 #v2.8.0
         with:
           cache-on-failure: true
+      - uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b #v3.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: cargo install cargo-hack
         uses: taiki-e/install-action@3ee5d63d29478156148c0b53e9f3447829b47bc2 #v2.58.23
         with:
@@ -226,15 +229,46 @@ jobs:
       - name: fetch deps
         run: |
           # Eagerly pull dependencies
-          time cargo metadata --format-version=1 --locked > /dev/null
+          cargo metadata --format-version=1 --locked > /dev/null
       - name: run zepter
         run: |
           cargo install zepter -f --locked
           zepter --version
-          time zepter format features --check
+          zepter format features
 
   deny:
-    uses: ithacaxyz/ci/.github/workflows/deny.yml@main
+    name: Check deny.toml ${{ matrix.checks }} ${{ matrix.features }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        checks:
+          - bans
+          - sources
+        # We don't need to check `--no-default-features` here, because (except in very rare cases):
+        # - disabling features isn't going to add duplicate dependencies
+        # - disabling features isn't going to add more crate sources
+        features: ["", --features default-release-binaries, --all-features]
+      # Always run the --all-features job, to get accurate "skip tree root was not found" warnings
+      fail-fast: false
+
+    # Prevent sudden announcement of a new advisory from failing ci:
+    continue-on-error: ${{ matrix.checks == 'advisories' }}
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@ab6845274e2ff01cd4462007e1a9d9df1ab49f42 #v1.14.0
+
+      - name: Check ${{ matrix.checks }} with features ${{ matrix.features }}
+        uses: EmbarkStudios/cargo-deny-action@f2ba7abc2abebaf185c833c3961145a3c275caad #v2.0.13
+        with:
+          # --all-features spuriously activates openssl, but we want to ban that dependency in
+          # all of zebrad's production features for security reasons. But the --all-features job is
+          # the only job that gives accurate "skip tree root was not found" warnings.
+          # In other jobs, we expect some of these warnings, due to disabled features.
+          command: check ${{ matrix.checks }} ${{ matrix.features == '--all-features' && '--allow banned' || '--allow unmatched-skip-root' }}
+          arguments: --workspace ${{ matrix.features }}
 
   lint-success:
     name: lint success
