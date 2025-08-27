@@ -1,4 +1,4 @@
-name: Lint
+name: Old Lint
 
 on:
   pull_request:
