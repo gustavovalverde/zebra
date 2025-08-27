@@ -89,6 +89,9 @@ jobs:
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 #v2.8.0
         with:
           cache-on-failure: true
+      - uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b #v3.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: cargo hack check --workspace
 
   msrv:
@@ -107,6 +110,9 @@ jobs:
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 #v2.8.0
         with:
           cache-on-failure: true
+      - uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b #v3.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: cargo build --bin "${{ matrix.binary }}" --workspace
 
   docs:
@@ -118,6 +124,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@ab6845274e2ff01cd4462007e1a9d9df1ab49f42 #v1.14.0
         with:
           toolchain: nightly
+          components: rustdoc
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 #v2.8.0
         with:
           cache-on-failure: true
@@ -152,6 +159,9 @@ jobs:
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 #v2.8.0
         with:
           cache-on-failure: true
+      - uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b #v3.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: taiki-e/install-action@3ee5d63d29478156148c0b53e9f3447829b47bc2 #v2.58.23
         with:
           tool: cargo-udeps
@@ -196,7 +206,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@ab6845274e2ff01cd4462007e1a9d9df1ab49f42 #v1.14.0
         with:
           toolchain: nightly
-          components: clippy
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 #v2.8.0
         with:
           cache-on-failure: true
@@ -204,7 +213,7 @@ jobs:
         uses: taiki-e/install-action@3ee5d63d29478156148c0b53e9f3447829b47bc2 #v2.58.23
         with:
           tool: cargo-hack
-      - run: make check-features
+      - run: cargo hack check --all
         env:
           RUSTFLAGS: -D warnings
 
@@ -222,7 +231,7 @@ jobs:
         run: |
           cargo install zepter -f --locked
           zepter --version
-          time zepter run check
+          time zepter format features --check
 
   deny:
     uses: ithacaxyz/ci/.github/workflows/deny.yml@main
